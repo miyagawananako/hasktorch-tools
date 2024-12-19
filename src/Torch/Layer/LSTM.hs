@@ -195,8 +195,6 @@ lstmLayers LstmParams{..} dropoutProb (h0,c0) inputs = unsafePerformIO $ do
   print "c0h"
   print c0t
   let firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
-  print "firstLayer"
-  print firstLayer
   let restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
       dropoutLayer = case dropoutProb of
                        Just prob -> unsafePerformIO . (dropout prob True)
