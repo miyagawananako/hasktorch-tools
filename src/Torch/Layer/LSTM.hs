@@ -190,14 +190,14 @@ lstmLayers LstmParams{..} dropoutProb (h0,c0) inputs = unsafePerformIO $ do
       d = if bidirectional then 2 else 1
       (h0h:h0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 h0 | i <- [0..numLayers]]
       (c0h:c0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 c0 | i <- [0..numLayers]]
-      print "h0h"
-      print h0h
-      print "c0h"
-      print c0t
-      firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
-      print "firstLayer"
-      print firstLayer
-      restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
+  print "h0h"
+  print h0h
+  print "c0h"
+  print c0t
+  let firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
+  print "firstLayer"
+  print firstLayer
+  let restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
       dropoutLayer = case dropoutProb of
                        Just prob -> unsafePerformIO . (dropout prob True)
                        Nothing -> id
