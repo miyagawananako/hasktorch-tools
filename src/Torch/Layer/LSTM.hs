@@ -115,12 +115,14 @@ singleLstmLayer bidirectional stateDim singleLstmParams (h0,c0) inputs = unsafeP
             .-> (\o -> reshape (tail $ shape o) o) -- | <2*(oDim/hDim)>
       return (output, (hLast, cLast))
     else do -- the case of LSTM
+      print "the case of LSTM"
       let h0c0f = (select 0 0 h0, select 0 0 c0) 
           (hsForward,csForward) = inputs
             .-> unstack          -- | [<iDim/oDim>] of length seqLen
-            .-> scanl' (lstmCell singleLstmParams) h0c0f
+            .-> scanl' (lstmCell singleLstmParams) h0c0f  -- ここが原因な気がする
             .-> tail             -- | [(<hDim>, <cDim>)] of length seqLen (by removing (h0,c0))
             .-> unzip            -- | ([<hDim>], [<cDim>])
+      print hsForward
           cLast = last csForward -- | <cDim>
             .-> singleton         -- | [<cDim>] of length 1
             .-> stack (Dim 0)    -- | <1, cDim>
@@ -188,7 +190,13 @@ lstmLayers LstmParams{..} dropoutProb (h0,c0) inputs = unsafePerformIO $ do
       d = if bidirectional then 2 else 1
       (h0h:h0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 h0 | i <- [0..numLayers]]
       (c0h:c0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 c0 | i <- [0..numLayers]]
+      print "h0h"
+      print h0h
+      print "c0h"
+      print c0t
       firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
+      print "firstLayer"
+      print firstLayer
       restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
       dropoutLayer = case dropoutProb of
                        Just prob -> unsafePerformIO . (dropout prob True)
