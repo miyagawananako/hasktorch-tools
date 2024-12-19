@@ -46,7 +46,7 @@ data LstmHypParams = LstmHypParams {
   } deriving (Eq, Show)
 
 data SingleLstmParams = SingleLstmParams {
-    forgetGate :: LinearParams
+    forgetGate :: LinearParams  -- どこで作られる？
     , inputGate :: LinearParams
     , candidateGate :: LinearParams
     , outputGate :: LinearParams
@@ -155,7 +155,7 @@ instance Randomizable LstmHypParams LstmParams where
         d = if bidirectional then 2 else 1
         xh2Dim = (d * oDim) + hDim
     LstmParams
-      <$> (SingleLstmParams
+      <$> (SingleLstmParams  -- ここで作られている
             <$> sample (LinearHypParams dev hasBias xh1Dim cDim) -- forgetGate
             <*> sample (LinearHypParams dev hasBias xh1Dim cDim) -- inputGate
             <*> sample (LinearHypParams dev hasBias xh1Dim cDim) -- candGate
@@ -166,7 +166,7 @@ instance Randomizable LstmHypParams LstmParams where
             )
       <*> forM [2..numLayers] (\_ ->
         SingleLstmParams 
-          <$> sample (LinearHypParams dev hasBias xh2Dim cDim)
+          <$> sample (LinearHypParams dev hasBias xh2Dim cDim)  -- 引数最後2つはinputDim outputDim  -- 13, 7
           <*> sample (LinearHypParams dev hasBias xh2Dim cDim)
           <*> sample (LinearHypParams dev hasBias xh2Dim cDim)
           <*> sample (LinearHypParams dev hasBias xh2Dim hDim)
