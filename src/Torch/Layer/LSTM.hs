@@ -46,7 +46,7 @@ data LstmHypParams = LstmHypParams {
   } deriving (Eq, Show)
 
 data SingleLstmParams = SingleLstmParams {
-    forgetGate :: LinearParams
+    forgetGate :: LinearParams  -- どこで作られる？
     , inputGate :: LinearParams
     , candidateGate :: LinearParams
     , outputGate :: LinearParams
@@ -115,13 +115,17 @@ singleLstmLayer bidirectional stateDim singleLstmParams (h0,c0) inputs = unsafeP
             .-> (\o -> reshape (tail $ shape o) o) -- | <2*(oDim/hDim)>
       return (output, (hLast, cLast))
     else do -- the case of LSTM
+      print "the case of LSTM"
       let h0c0f = (select 0 0 h0, select 0 0 c0) 
-          (hsForward,csForward) = inputs
+      print "h0c0f ^ (ht,ct) of shape (<hDim>,<cDim>)"
+      print h0c0f
+      let (hsForward,csForward) = inputs
             .-> unstack          -- | [<iDim/oDim>] of length seqLen
-            .-> scanl' (lstmCell singleLstmParams) h0c0f
+            .-> scanl' (lstmCell singleLstmParams) h0c0f  -- ここが原因な気がする
             .-> tail             -- | [(<hDim>, <cDim>)] of length seqLen (by removing (h0,c0))
             .-> unzip            -- | ([<hDim>], [<cDim>])
-          cLast = last csForward -- | <cDim>
+      print hsForward  -- 出力されない
+      let cLast = last csForward -- | <cDim>
             .-> singleton         -- | [<cDim>] of length 1
             .-> stack (Dim 0)    -- | <1, cDim>
             .-> (\o -> reshape (tail $ shape o) o) -- | <cDim>
@@ -151,7 +155,7 @@ instance Randomizable LstmHypParams LstmParams where
         d = if bidirectional then 2 else 1
         xh2Dim = (d * oDim) + hDim
     LstmParams
-      <$> (SingleLstmParams
+      <$> (SingleLstmParams  -- ここで作られている
             <$> sample (LinearHypParams dev hasBias xh1Dim cDim) -- forgetGate
             <*> sample (LinearHypParams dev hasBias xh1Dim cDim) -- inputGate
             <*> sample (LinearHypParams dev hasBias xh1Dim cDim) -- candGate
@@ -162,7 +166,7 @@ instance Randomizable LstmHypParams LstmParams where
             )
       <*> forM [2..numLayers] (\_ ->
         SingleLstmParams 
-          <$> sample (LinearHypParams dev hasBias xh2Dim cDim)
+          <$> sample (LinearHypParams dev hasBias xh2Dim cDim)  -- 引数最後2つはinputDim outputDim  -- 13, 7
           <*> sample (LinearHypParams dev hasBias xh2Dim cDim)
           <*> sample (LinearHypParams dev hasBias xh2Dim cDim)
           <*> sample (LinearHypParams dev hasBias xh2Dim hDim)
@@ -188,8 +192,12 @@ lstmLayers LstmParams{..} dropoutProb (h0,c0) inputs = unsafePerformIO $ do
       d = if bidirectional then 2 else 1
       (h0h:h0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 h0 | i <- [0..numLayers]]
       (c0h:c0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 c0 | i <- [0..numLayers]]
-      firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
-      restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
+  print "h0h"
+  print h0h  -- Tensor Float [1,7] [[-1.0865   , -1.0254   , -0.2031   , -0.3242   , -8.4265e-2,  1.9320   ,  0.3088   ]]
+  print "c0h"
+  print c0h
+  let firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
+  let restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
       dropoutLayer = case dropoutProb of
                        Just prob -> unsafePerformIO . (dropout prob True)
                        Nothing -> id
