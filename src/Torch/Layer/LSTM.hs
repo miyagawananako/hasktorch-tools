@@ -59,7 +59,7 @@ lstmCell :: SingleLstmParams
   -> Tensor          -- ^ xt of shape <iDim/oDim>
   -> (Tensor,Tensor) -- ^ (ht',ct') of shape (<hDim>,<cDim>)
 lstmCell SingleLstmParams{..} (ht,ct) xt =
-  let xt_ht = cat (Dim 0) [xt,ht]
+  let xt_ht = cat (Dim 0) [xt,ht]  -- ここで足し合わせる、多分7+7=14になっている
       ft = sigmoid $ linearLayer forgetGate $ xt_ht
       it = sigmoid $ linearLayer inputGate $ xt_ht
       cant = tanh' $ linearLayer candidateGate $ xt_ht
@@ -118,7 +118,7 @@ singleLstmLayer bidirectional stateDim singleLstmParams (h0,c0) inputs = unsafeP
       print "the case of LSTM"
       let h0c0f = (select 0 0 h0, select 0 0 c0) 
       print "h0c0f ^ (ht,ct) of shape (<hDim>,<cDim>)"
-      print h0c0f
+      print h0c0f  -- (Tensor Float [7] [ 1.5338   , -2.3662   , -0.3988   , -0.3802   ,  0.3130   ,  0.2831   ,  0.5768   ],Tensor Float [7] [ 1.5338   , -2.3662   , -0.3988   , -0.3802   ,  0.3130   ,  0.2831   ,  0.5768   ])
       let (hsForward,csForward) = inputs
             .-> unstack          -- | [<iDim/oDim>] of length seqLen
             .-> scanl' (lstmCell singleLstmParams) h0c0f  -- ここが原因な気がする
@@ -143,19 +143,20 @@ data LstmParams = LstmParams {
   } deriving (Show, Generic)
 instance Parameterized LstmParams
 
+-- firstLstmParamsとrestLstmParamsの値が違う理由は？
 instance Randomizable LstmHypParams LstmParams where
   sample LstmHypParams{..} = do
-    let xDim = inputSize
-        hDim = hiddenSize
+    let xDim = inputSize  -- 5
+        hDim = hiddenSize  -- 7
         cDim = hiddenSize
-        xh1Dim = xDim + hDim
+        xh1Dim = xDim + hDim  -- 12
         oDim = case projSize of
                  Just projDim -> projDim
                  Nothing -> hDim
         d = if bidirectional then 2 else 1
-        xh2Dim = (d * oDim) + hDim
+        xh2Dim = (d * oDim) + hDim  -- 1*7 + 7 = 14
     LstmParams
-      <$> (SingleLstmParams  -- ここで作られている
+      <$> (SingleLstmParams  -- ここで作られている（ここがまずいかも）
             <$> sample (LinearHypParams dev hasBias xh1Dim cDim) -- forgetGate
             <*> sample (LinearHypParams dev hasBias xh1Dim cDim) -- inputGate
             <*> sample (LinearHypParams dev hasBias xh1Dim cDim) -- candGate
@@ -166,7 +167,7 @@ instance Randomizable LstmHypParams LstmParams where
             )
       <*> forM [2..numLayers] (\_ ->
         SingleLstmParams 
-          <$> sample (LinearHypParams dev hasBias xh2Dim cDim)  -- 引数最後2つはinputDim outputDim  -- 13, 7
+          <$> sample (LinearHypParams dev hasBias xh2Dim cDim)  -- 引数最後2つはinputDim outputDim  -- 14, 7
           <*> sample (LinearHypParams dev hasBias xh2Dim cDim)
           <*> sample (LinearHypParams dev hasBias xh2Dim cDim)
           <*> sample (LinearHypParams dev hasBias xh2Dim hDim)

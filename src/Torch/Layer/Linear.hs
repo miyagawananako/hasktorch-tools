@@ -44,7 +44,7 @@ instance Randomizable LinearHypParams LinearParams where
     m <- xavierUniform' dev [outputDim, inputDim] 
     b <- xavierUniform' dev [outputDim, 1]
     LinearParams
-      <$> makeIndependent (m / denom) -- denomでnormalize
+      <$> makeIndependent (m / denom) -- denomでnormalize  -- ここでweightが作られる
       <*> if hasBias
             then Just <$> (makeIndependent b)
             else return Nothing
@@ -66,7 +66,7 @@ linearLayer :: LinearParams -- ^ model
   -> Tensor -- ^ output tensor <..., outputDim>
 linearLayer LinearParams{..} input = unsafePerformIO $ do
   print $ shape $ input
-  print $ shape $ toDependent weight
+  print $ shape $ toDependent weight  -- weightがおかしい。なぜか7×12で12を求めている
   let inputShape = shape input
       revshape@(inputDim:batchDims) = reverse inputShape
       matrix = toDependent weight
