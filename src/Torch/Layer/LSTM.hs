@@ -124,6 +124,7 @@ singleLstmLayer bidirectional stateDim singleLstmParams (h0,c0) inputs = unsafeP
             .-> scanl' (lstmCell singleLstmParams) h0c0f  -- ここが原因な気がする
             .-> tail             -- | [(<hDim>, <cDim>)] of length seqLen (by removing (h0,c0))
             .-> unzip            -- | ([<hDim>], [<cDim>])
+      print "hsForward"
       print hsForward  -- 出力されない
       let cLast = last csForward -- | <cDim>
             .-> singleton         -- | [<cDim>] of length 1
