@@ -117,15 +117,13 @@ singleLstmLayer bidirectional stateDim singleLstmParams (h0,c0) inputs = unsafeP
     else do -- the case of LSTM
       print "the case of LSTM"
       let h0c0f = (select 0 0 h0, select 0 0 c0) 
-      print "h0c0f ^ (ht,ct) of shape (<hDim>,<cDim>)"
-      print h0c0f  -- (Tensor Float [7] [ 1.5338   , -2.3662   , -0.3988   , -0.3802   ,  0.3130   ,  0.2831   ,  0.5768   ],Tensor Float [7] [ 1.5338   , -2.3662   , -0.3988   , -0.3802   ,  0.3130   ,  0.2831   ,  0.5768   ])
+      print $ "h0c0f ^ (ht,ct) of shape (<hDim>,<cDim>) " ++ show h0c0f  -- (Tensor Float [7] [ 1.5338   , -2.3662   , -0.3988   , -0.3802   ,  0.3130   ,  0.2831   ,  0.5768   ],Tensor Float [7] [ 1.5338   , -2.3662   , -0.3988   , -0.3802   ,  0.3130   ,  0.2831   ,  0.5768   ])
       let (hsForward,csForward) = inputs
             .-> unstack          -- | [<iDim/oDim>] of length seqLen
             .-> scanl' (lstmCell singleLstmParams) h0c0f  -- ここが原因な気がする
             .-> tail             -- | [(<hDim>, <cDim>)] of length seqLen (by removing (h0,c0))
             .-> unzip            -- | ([<hDim>], [<cDim>])
-      print "hsForward"
-      print hsForward  -- 出力されない
+      print $ "hsForward " ++ show hsForward  -- 出力されない
       let cLast = last csForward -- | <cDim>
             .-> singleton         -- | [<cDim>] of length 1
             .-> stack (Dim 0)    -- | <1, cDim>
@@ -194,10 +192,8 @@ lstmLayers LstmParams{..} dropoutProb (h0,c0) inputs = unsafePerformIO $ do
       d = if bidirectional then 2 else 1
       (h0h:h0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 h0 | i <- [0..numLayers]]
       (c0h:c0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 c0 | i <- [0..numLayers]]
-  print "h0h"
-  print h0h  -- Tensor Float [1,7] [[-1.0865   , -1.0254   , -0.2031   , -0.3242   , -8.4265e-2,  1.9320   ,  0.3088   ]]
-  print "c0h"
-  print c0h
+  print $ "h0h " ++ show h0h  -- Tensor Float [1,7] [[-1.0865   , -1.0254   , -0.2031   , -0.3242   , -8.4265e-2,  1.9320   ,  0.3088   ]]
+  print $ "c0h " ++ show c0h
   let firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
   let restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
       dropoutLayer = case dropoutProb of

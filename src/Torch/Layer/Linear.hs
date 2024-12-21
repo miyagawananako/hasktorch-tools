@@ -65,8 +65,8 @@ linearLayer :: LinearParams -- ^ model
   -> Tensor -- ^ input tensor <..., inputDim>
   -> Tensor -- ^ output tensor <..., outputDim>
 linearLayer LinearParams{..} input = unsafePerformIO $ do
-  print $ shape $ input
-  print $ shape $ toDependent weight  -- weightがおかしい。なぜか7×12で12を求めている
+  print $ "shape input " ++ show (shape input)
+  print $ "shape toDependent weight " ++ show (shape (toDependent weight))  -- weightがおかしい。なぜか7×12で12を求めている
   let inputShape = shape input
       revshape@(inputDim:batchDims) = reverse inputShape
       matrix = toDependent weight
