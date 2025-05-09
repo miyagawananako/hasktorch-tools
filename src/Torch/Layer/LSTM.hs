@@ -207,11 +207,16 @@ lstmLayers LstmParams{..} dropoutProb batchFirst (h0,c0) inputs = unsafePerformI
                     | dnumLayers == numLayers = False
                     | otherwise = False -- Unexpected
       d = if bidirectional then 2 else 1
-      (h0h:h0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 h0 | i <- [0..numLayers]]
+  print $ "h0 shape: " ++ (show h0Shape)
+  let (h0h:h0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 h0 | i <- [0..numLayers]]  -- ここ
       (c0h:c0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 c0 | i <- [0..numLayers]]
-      firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
-      restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
-      dropoutLayer = case dropoutProb of
+  print $ "h0h shape: " ++ (show $ shape h0h)
+  let firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
+  print $ "firstLayer shape: " ++ (show $ shape $ fst firstLayer)
+  print $ "h0t shape: " ++ (show $ shape h0t)
+  let restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
+  print $ "restOfLayers shape: " ++ (show $ shape $ fst $ head restOfLayers)
+  let dropoutLayer = case dropoutProb of
                        Just prob -> unsafePerformIO . (dropout prob True)
                        Nothing -> id
       stackedLayers = \inputTensor -> 
