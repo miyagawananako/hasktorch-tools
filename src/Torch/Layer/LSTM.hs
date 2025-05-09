@@ -89,6 +89,7 @@ singleLstmLayer bidirectional stateDim singleLstmParams (h0,c0) inputs = unsafeP
                     Just projParam -> linearLayer projParam -- | <d, seqLen, bSize, projDim>
                     Nothing -> id                           -- | <d, seqLen, bSize, hDim>
       expectedShape = if isBatched then [d,shape inputs !! 1,stateDim] else [d,stateDim]
+  print $ "h0shape: " ++ (show h0shape)
   unless (h0shape == expectedShape) $ ioError $ userError $ "illegal shape of h0: " ++ (show h0shape) 
   unless (c0shape == expectedShape) $ ioError $ userError $ "illegal shape of c0: " ++ (show c0shape)
   if bidirectional -- check the well-formedness of the shapes of h0 and c0
@@ -212,10 +213,8 @@ lstmLayers LstmParams{..} dropoutProb batchFirst (h0,c0) inputs = unsafePerformI
       (c0h:c0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 c0 | i <- [0..numLayers]]
   print $ "h0h shape: " ++ (show $ shape h0h)
   let firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
-  print $ "firstLayer shape: " ++ (show $ shape $ fst firstLayer)
   print $ "h0t shape: " ++ (show $ shape h0t)
   let restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
-  print $ "restOfLayers shape: " ++ (show $ shape $ fst $ head restOfLayers)
   let dropoutLayer = case dropoutProb of
                        Just prob -> unsafePerformIO . (dropout prob True)
                        Nothing -> id
