@@ -213,7 +213,7 @@ lstmLayers LstmParams{..} dropoutProb batchFirst (h0,c0) inputs = unsafePerformI
       (c0h:c0t) = [sliceDim 0 (d*i) (d*(i+1)) 1 c0 | i <- [0..numLayers]]
   print $ "h0h shape: " ++ (show $ shape h0h)
   let firstLayer = singleLstmLayer bidirectional hiddenSize firstLstmParams (h0h,c0h) 
-  print $ "h0t shape: " ++ (show $ shape h0t)
+  print $ "h0t shapes: " ++ (show $ map shape h0t)
   let restOfLayers = map (uncurry $ singleLstmLayer bidirectional hiddenSize) $ zip restLstmParams $ zip h0t c0t
   let dropoutLayer = case dropoutProb of
                        Just prob -> unsafePerformIO . (dropout prob True)
