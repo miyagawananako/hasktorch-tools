@@ -90,6 +90,7 @@ singleLstmLayer bidirectional stateDim singleLstmParams (h0,c0) inputs = unsafeP
                     Nothing -> id                           -- | <d, seqLen, bSize, hDim>
       expectedShape = if isBatched then [d,shape inputs !! 1,stateDim] else [d,stateDim]
   print $ "h0shape: " ++ (show h0shape)
+  print $ "expectedShape: " ++ (show expectedShape)
   unless (h0shape == expectedShape) $ ioError $ userError $ "illegal shape of h0: " ++ (show h0shape) 
   unless (c0shape == expectedShape) $ ioError $ userError $ "illegal shape of c0: " ++ (show c0shape)
   if bidirectional -- check the well-formedness of the shapes of h0 and c0
